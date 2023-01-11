@@ -1,5 +1,5 @@
-(ns server.db
-  (:require [server.env :refer [env]]
+(ns patients.db
+  (:require [patients.env :refer [env]]
             ; [clj-time.core :as t]
             ; [clj-time.format :as f]
             ; [clj-time.jdbc]
@@ -8,7 +8,7 @@
             [clojure.java.jdbc :as j]
             [ragtime.jdbc :as jdbc]
             [ragtime.repl :as repl]
-            [server.helpers :refer [string-to-date]]))
+            [patients.helpers :refer [string-to-date]]))
 
 ;; config
 
@@ -37,7 +37,6 @@
   (j/query pg-db q))
 
 (defn get-patients [{where :where order-by :order-by}]
-  (println str order-by)
   (query (-> (h/select :*)
              (h/from :patients)
              (h/where where)
@@ -78,16 +77,7 @@
 
   (migrate)
   (rollback)
-  (query "CREATE TABLE adress (
-                             id serial primary key,
-                             country varchar(100) not null,
-                             city varchar(100) not null,
-                             street varchar(255) not null,
-                             house varchar(100) not null,
-                             createdAt timestamp not null default now(),
-                             updatedAt timestamp not null default now()
-                             );
-        CREATE TABLE patients (
+  (j/db-do-commands pg-db "create table if not exists patients (
                                 id serial primary key, 
                                 first_name varchar(255) not null,
                                 last_name varchar(255) not null,
@@ -95,8 +85,6 @@
                                 sex varchar(1) not null,
                                 dob date not null,
                                 insurance_number varchar(70) not null,
-                                adress_id int references adress(id) not null,
+                                address varchar(500) not null,
                                 createdAt timestamp not null default now(),
-                                updatedAt timestamp not null default now()
-                                );"))
-
+                                updatedAt timestamp not null default now());"))

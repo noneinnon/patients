@@ -1,4 +1,4 @@
-(ns server.env)
+(ns patients.env)
 
 (defn env [key]
   (System/getenv (name key)))
@@ -7,5 +7,3 @@
   (name :DB_NAME)
   (env :DB_NAME)
   (System/getenv "DB_NAME"))
-
-

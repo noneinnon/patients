@@ -1,12 +1,17 @@
-(ns server.core
+(ns patients.core
   (:require [ring.adapter.jetty :as ring-jetty]
             [reitit.ring :as ring]
             [ring.util.response :as r]
             [ring.middleware.params :as mw-params]
             [muuntaja.core :as m]
-            [muuntaja.middleware :as mw]
             [reitit.ring.middleware.muuntaja :as muuntaja]
-            [server.db :as db]))
+            [clojure.java.io :as io]
+            [patients.db :as db]))
+
+(defn home-page [_]
+  (-> (slurp (io/resource "public/index.html"))
+      (r/response)
+      (assoc :status 200)))
 
 (defn get-patients [req]
     (let [patients (db/get-patients {})]
@@ -20,7 +25,9 @@
     ["/"
      ["api/"
       ["patients" {:get get-patients}]]
-     ["" {:handler (fn [req] {:body "Create redirect screen" :status 200})}]]
+     ["assets/*" (ring/create-resource-handler {:root "public/assets"})]
+     ["css/*" (ring/create-resource-handler {:root "public/css"})]
+     ["" {:get home-page}]]
     {:data {:muuntaja m/instance
             :middleware [mw-params/wrap-params muuntaja/format-middleware]}})))
 
@@ -29,8 +36,6 @@
                                :join? false}))
 
 
-
-(comment
 (def server (start))
-(.stop server)
-  )
+(comment
+  (get-patients {}))

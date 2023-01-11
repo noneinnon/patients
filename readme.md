@@ -1,8 +1,11 @@
 ## Running project locally
 
-### Running ClojureScript
+- run `make repl` to start project 
+- eval `src/patients/core.clj` to start server
 
-- run `make front` to start shadow-cljs & repl
+### Optionally:
+- run `make server` to start clojure repl
+- run `make front` to start shadow-cljs & browser repl
 - run in neovim `:ConjureShadowSelect app` to connect to sdadow-cljs repl from Conjure
 
 ### Environment
@@ -10,11 +13,9 @@
 Environment variables should be declared in `.env` file.
 Needed variables are listed in `.env.example`.
 
-To run repl, use `make repl` command.
-
 ## Running tests
 
-`make DB_NAME=<name> run_test`
+`make run_test`
 
 ## Migrations
 

@@ -1,4 +1,4 @@
-(ns server.helpers)
+(ns patients.helpers)
 
 (defn date-to-string [date]
   (->> (java.time.format.DateTimeFormatter/ofPattern "yyyy-MM-dd")
