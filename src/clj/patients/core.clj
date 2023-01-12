@@ -13,18 +13,17 @@
       (r/response)
       (assoc :status 200)))
 
-(defn get-patients [req]
+(defn _patients [req]
     (let [patients (db/get-patients {})]
     (-> patients
-        (r/response)
-        (assoc :headers {"Content-Type" "application/json"}))))
+        (r/response))))
 
 (def app
   (ring/ring-handler
    (ring/router
     ["/"
      ["api/"
-      ["patients" {:get get-patients}]]
+      ["patients" {:get _patients}]]
      ["assets/*" (ring/create-resource-handler {:root "public/assets"})]
      ["css/*" (ring/create-resource-handler {:root "public/css"})]
      ["" {:get home-page}]]
@@ -38,4 +37,5 @@
 
 (def server (start))
 (comment
+  (db/get-patients {})
   (get-patients {}))

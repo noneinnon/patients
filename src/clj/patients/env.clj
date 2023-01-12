@@ -4,6 +4,6 @@
   (System/getenv (name key)))
 
 (comment
-  (name :DB_NAME)
   (env :DB_NAME)
+  (name :DB_NAME)
   (System/getenv "DB_NAME"))
