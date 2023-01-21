@@ -38,6 +38,7 @@
   (j/query pg-db q))
 
 (defn get-patients [{where :where order-by :order-by}]
+  (prn "where" where)
   (query (-> (h/select :*)
              (h/from :patients)
              (h/where where)
@@ -55,6 +56,7 @@
              (sql/format))))
 
 (comment
+  (get-patients {:where [:= :patients.id 1]})
   (get-patients {})
 
   (query (-> (h/select :*)
@@ -64,12 +66,6 @@
   (query (-> (h/select :*)
              (h/from :patients)
              (sql/format)))
-
-  (query (-> {:insert-into [:adress]
-              :columns [:country :city :street :house]
-              :values [["Germany" "Berlin" "Kurfürstendamm" "1"]
-                       ["England" "London" "Baker str" "14"]]}
-             (sql/format {:pretty true})))
 
   ; (query (-> {:insert-into [:patients]
   ;             :columns [:sex :dob :insurance_number :adress_id]

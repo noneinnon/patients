@@ -1,32 +1,52 @@
-(ns core
+(ns patients.core
   (:require
-   [cljs.core.async :as async :refer [go <!]]
    [reagent.core :as reagent :refer [atom]]
    [reitit.frontend :as rf]
    [reitit.frontend.easy :as rfe]
    [reitit.coercion.spec :as rss]
-   [cljs-http.client :as http]
+   [re-frame.core :as re-frame]
+   [patients.events :as events]
+   [patients.subs :as subs]
    ["react-dom/client" :refer [createRoot]]))
 
 ;; views
 ;; ----------------------------------------------------------------------------
-(defn patients-list [match]
-  (let [patients (get-in match [:data :state :data])]
-    [:ul
-     (if (not-empty patients)
-       (for [patient patients]
-         [:a {:key (get patient :id) 
-              :href (rfe/href ::patient {:id (:id patient)})}
-          [:li.patient-container (:first_name patient) (:last_name patient)]])
-       [:li "no patients found"])]))
+(defn patients-list []
+  (let [patients (re-frame/subscribe [::subs/patients])
+        state (re-frame/subscribe [::subs/state])]
+    (reagent/create-class
+     {:component-did-mount (fn []
+                             (re-frame/dispatch [::events/fetch-patients]))
+      :reagent-render (fn []
+                        [:ul
+                         [:h1 @state]
+                         (if (not-empty @patients)
+                           (for [patient @patients]
+                             [:a {:key (:id patient)
+                                  :href (rfe/href ::patient {:id (:id patient)})}
+                              [:li.patient-container (:first_name patient) (:last_name patient) (:age patient)]])
+                           [:li "No patients found"])])})))
 
 (defn create-new-patient []
   [:form
    [:input {:type :text :name :first-name :placeholder "First name"}]
    [:input {:type :text :name :last-name :placeholder "Last name"}]])
 
-(defn view-patient [patient]
-  [:section (:age patient)])
+(defn view-patient [match]
+  (let [patient-id (get-in match [:path-params :id])
+        patient (re-frame/subscribe [::subs/patient])
+        state (re-frame/subscribe [::subs/state])]
+    (reagent/create-class
+     {:component-did-mount
+      (fn []
+        (re-frame/dispatch [::events/fetch-patient {:id patient-id}]))
+      :reagent-render
+      (fn []
+        (case @state
+          :loading [:section "Loading"]
+          (if @patient
+            [:section (:first_name @patient)]
+            [:section "No patient with this ID exist"])))})))
 
 ;; routes
 ;; ----------------------------------------------------------------------------
@@ -62,28 +82,13 @@
 ;; ----------------------------------------------------------------------------
 
 (defn- main []
-  (let [state (atom {:data nil :state "init"})] ;; you can include state
-    (reagent/create-class
-     {:component-did-mount
-      (fn []
-        (go (let [response (<! (http/get "/api/patients"))
-                  data (:body response)]
-              (swap! state assoc :data data :state "done"))))
-
-       ;; ... other methods go here
-
-       ;; name your component for inclusion in error messages
-      :display-name "complex-component"
-
-       ;; note the keyword for this method
-      :reagent-render
-      (fn []
-        (rfe/start!
-         (rf/router routes {:data {:coercion rss/coercion :state @state}})
-         (fn [m] (reset! match m))
+  (fn []
+    (rfe/start!
+     (rf/router routes {:data {:coercion rss/coercion}})
+     (fn [m] (reset! match m))
           ;; set to false to enable HistoryAPI
-         {:use-fragment true})
-        [:main [current-page]])})))
+     {:use-fragment true})
+    [:main [current-page]]))
 
 ;; ----------------------------------------------------------------------------
 
@@ -91,6 +96,7 @@
 
 (defn init
   []
+  (re-frame/dispatch-sync [::events/initialize-db])
   (.render root (reagent/as-element [main])))
 
 (defn ^:dev/after-load re-render
@@ -98,4 +104,5 @@
   ;; The `:dev/after-load` metadata causes this function to be called
   ;; after shadow-cljs hot-reloads code.
   ;; This function is called implicitly by its annotation.
+  (re-frame/clear-subscription-cache!)
   (init))
