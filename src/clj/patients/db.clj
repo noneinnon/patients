@@ -1,20 +1,17 @@
 (ns patients.db
   (:require [patients.env :refer [env]]
-            ; [clj-time.core :as t]
-            ; [clj-time.format :as f]
-            ; [clj-time.jdbc]
             [honey.sql :as sql]
             [honey.sql.helpers :as h]
+            ;; https://clojure-doc.org/articles/ecosystem/java_jdbc/home/
             [clojure.java.jdbc :as j]
             [ragtime.jdbc :as jdbc]
-            [ragtime.repl :as repl]
-            [patients.helpers :refer [string-to-date]]))
+            [clojure.string :refer [join]]
+            [ragtime.repl :as repl]))
 
 ;; config
-
 (def pg-db {:dbtype "postgresql"
             :dbname (env :DB_NAME)
-            :host (env :DB_HOST) 
+            :host (env :DB_HOST)
             :port (env :DB_PORT)
             :user (env :DB_USER)
             :password (env :DB_PASSWORD)})
@@ -38,25 +35,23 @@
   (j/query pg-db q))
 
 (defn get-patients [{where :where order-by :order-by}]
-  (prn "where" where)
   (query (-> (h/select :*)
              (h/from :patients)
              (h/where where)
              (h/order-by (or order-by :id))
              (sql/format))))
 
-(defn insert-patients [& patients]
-  (query (-> (h/insert-into :patients)
-             (h/values patients)
-             (sql/format))))
+(defn create-patient [patient]
+  (j/insert! pg-db :patients patient))
 
-(defn remove-patient [patient]
-  (query (-> (h/delete :patients)
-             (h/where {:id (:id patient)})
-             (sql/format))))
+(defn update-patient [id updates]
+  (j/update! pg-db :patients updates ["id = ?" id]))
+
+(defn delete-patient [id]
+  (j/delete! pg-db :patients ["id = ?" id]))
 
 (comment
-  (get-patients {:where [:= :patients.id 1]})
+  (get-patients {:where [:= :patients.id 388]})
   (get-patients {})
 
   (query (-> (h/select :*)
@@ -67,10 +62,14 @@
              (h/from :patients)
              (sql/format)))
 
-  ; (query (-> {:insert-into [:patients]
-  ;             :columns [:sex :dob :insurance_number :adress_id]
-  ;             :values [["M" (t/date-time 1983 10 14) "1234567890777" 2]]}
-  ;            (sql/format {:pretty true})))
+  (-> {:insert-into [:patients]
+       :columns [:sex :insurance_number :adress_id]
+       :values [["M" "1234567890777" 2]]}
+      (sql/format {:pretty true}))
+  (-> (h/insert-into :patients_test)
+      (h/values [{:first_name "asdasd"}])
+      (sql/format)
+      join)
 
   (migrate)
   (rollback)

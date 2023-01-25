@@ -8,4 +8,8 @@
   (->> date-string
        (java.time.LocalDate/parse)))
 
-(comment (date-to-string (string-to-date "2018-01-01")))
+(defn parse-int [s]
+  (Integer/parseInt (re-find #"\A-?\d+" s)))
+
+(comment (date-to-string (string-to-date "2018-01-01"))
+         (parse-int "40"))
