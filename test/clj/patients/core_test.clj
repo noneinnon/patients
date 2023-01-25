@@ -67,12 +67,22 @@
 
 (deftest get-all-patients
   (testing "should return patient list")
-  (let [response (-> (mock/request :get "/api/patients")
+  (let [response (-> (mock/request :get "/api/patients" {:sort :first_name})
                      patients/app
                      parse-body)
         body (:body response)]
     (and (is (= (:status response) 200))
-         (is (= (count body) 3)))))
+         (is (= (count body) 3))
+         (is (= (:name (first body)) (:name (last patients-fixture)))))))
+
+(k/run (deftest get-filtered-patients
+         (testing "correctly filters out")
+         (let [response (-> (mock/request :get "/api/patients" {:first_name "jo"})
+                            patients/app
+                            parse-body)
+               body (:body response)]
+           (and (is (= (:status response) 200))
+                (is (= (count body) 1))))))
 
 (deftest create-patient
   (testing "should correctly create new patient")
@@ -99,6 +109,19 @@
                :id)
         update-response (-> (mock/request :put (str "/api/patients/" id) {:first_name "michael"}) patients/app parse-body)]
     (is (= (:body update-response) [1]))))
+
+(deftest update-patient-failure
+  (testing "should return 400 with errors")
+  (let [id (-> (mock/request :get "/api/patients")
+               patients/app
+               parse-body
+               :body
+               first
+               :id)
+        update-response (-> (mock/request :put (str "/api/patients/" id) {:first_name 123 }) patients/app parse-body)]
+    (and 
+      (is (= (:status update-response) 400))
+      (is (= (empty? (:body update-response)) false)))))
 
 (deftest delete-patients
   (testing "should correctly delete patient")

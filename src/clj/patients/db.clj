@@ -1,6 +1,7 @@
 (ns patients.db
   (:require [patients.env :refer [env]]
             [honey.sql :as sql]
+            [honey.sql.pg-ops :as pg-ops]
             [honey.sql.helpers :as h]
             ;; https://clojure-doc.org/articles/ecosystem/java_jdbc/home/
             [clojure.java.jdbc :as j]
@@ -18,27 +19,44 @@
 
 ;; migrations
 ;; TODO make migrations work
-(defn create-config
-  "creates a config map for ragtime"
-  []
-  {:datastore (jdbc/sql-database pg-db)
-   :migrations (jdbc/load-resources "migrations")})
+; (defn create-config
+;   "creates a config map for ragtime"
+;   []
+;   {:datastore (jdbc/sql-database pg-db)
+;    :migrations (jdbc/load-resources "migrations")})
 
-(defn migrate []
-  (repl/migrate (create-config)))
-
-(defn rollback []
-  (repl/rollback (create-config)))
+; (defn migrate []
+;   (repl/migrate (create-config)))
+;
+; (defn rollback []
+;   (repl/rollback (create-config)))
 
 ;; CRUD
 (defn query [q]
   (j/query pg-db q))
 
-(defn get-patients [{where :where order-by :order-by}]
+(defn get-patients [{:keys [first_name
+                            last_name
+                            id
+                            age
+                            address
+                            insurance_number
+                            sort-param
+                            order
+                            offset
+                            limit]}]
   (query (-> (h/select :*)
              (h/from :patients)
-             (h/where where)
-             (h/order-by (or order-by :id))
+             (h/where :and
+                      (when id [:= :patients.id id])
+                      (when first_name [pg-ops/iregex :patients.first_name first_name])
+                      (when last_name [pg-ops/iregex :patients.last_name last_name])
+                      (when address [pg-ops/iregex :patients.address address])
+                      (when age [:= :patients.age age])
+                      (when insurance_number [:= :patients.age insurance_number]))
+             (h/order-by [sort-param order])
+             (h/offset offset)
+             (h/limit limit)
              (sql/format))))
 
 (defn create-patient [patient]
@@ -50,37 +68,3 @@
 (defn delete-patient [id]
   (j/delete! pg-db :patients ["id = ?" id]))
 
-(comment
-  (get-patients {:where [:= :patients.id 388]})
-  (get-patients {})
-
-  (query (-> (h/select :*)
-             (h/from :adress)
-             (sql/format {:pretty true})))
-
-  (query (-> (h/select :*)
-             (h/from :patients)
-             (sql/format)))
-
-  (-> {:insert-into [:patients]
-       :columns [:sex :insurance_number :adress_id]
-       :values [["M" "1234567890777" 2]]}
-      (sql/format {:pretty true}))
-  (-> (h/insert-into :patients_test)
-      (h/values [{:first_name "asdasd"}])
-      (sql/format)
-      join)
-
-  (migrate)
-  (rollback)
-  (j/db-do-commands pg-db "create table if not exists patients (
-                                id serial primary key, 
-                                first_name varchar(255) not null,
-                                last_name varchar(255) not null,
-                                age int not null,
-                                sex varchar(1) not null,
-                                dob date not null,
-                                insurance_number varchar(70) not null,
-                                address varchar(500) not null,
-                                createdAt timestamp not null default now(),
-                                updatedAt timestamp not null default now());"))

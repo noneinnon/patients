@@ -9,7 +9,9 @@
        (java.time.LocalDate/parse)))
 
 (defn parse-int [s]
-  (Integer/parseInt (re-find #"\A-?\d+" s)))
+  (try (Integer/parseInt (re-find #"\A-?\d+" s))
+       (catch ClassCastException _ s)
+       (catch NullPointerException _ s)))
 
 (comment (date-to-string (string-to-date "2018-01-01"))
-         (parse-int "40"))
+         (parse-int nil))
