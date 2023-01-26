@@ -70,67 +70,66 @@
   (let [response (-> (mock/request :get "/api/patients" {:sort :first_name})
                      patients/app
                      parse-body)
-        body (:body response)]
+        [patients total] (:body response)]
     (and (is (= (:status response) 200))
-         (is (= (count body) 3))
-         (is (= (:name (first body)) (:name (last patients-fixture)))))))
+         (is (= total 3))
+         (is (= (:name (first patients)) (:name (last patients-fixture)))))))
 
-(k/run (deftest get-filtered-patients
-         (testing "correctly filters out")
-         (let [response (-> (mock/request :get "/api/patients" {:first_name "jo"})
-                            patients/app
-                            parse-body)
-               body (:body response)]
-           (and (is (= (:status response) 200))
-                (is (= (count body) 1))))))
+(deftest get-filtered-patients
+  (testing "correctly filters out")
+  (let [response (-> (mock/request :get "/api/patients" {:first_name "jo"})
+                     patients/app
+                     parse-body)
+        [_ total] (:body response)]
+    (and (is (= (:status response) 200))
+         (is (= total 1)))))
 
 (deftest create-patient
   (testing "should correctly create new patient")
   (let [patient {:first_name "ringo" :last_name "starr" :age 40 :sex "m" :insurance_number "1234567890123" :address "Liverpool, Penny Lane, 8" :dob (helpers/string-to-date "1940-10-09")}
         response (-> (mock/request :post "/api/patients" patient) patients/app parse-body)
-        created (:body response)
-        by-id-response (-> (mock/request :get (str "/api/patients/" (:id (first created)))) patients/app parse-body)]
+        [created] (:body response)
+        by-id-response (-> (mock/request :get (str "/api/patients/" (:id created)))
+                           patients/app
+                           parse-body
+                           :body
+                           first)]
     (and (is (= (:status response) 201))
-         (is (= (:status by-id-response) 200))
-         (is (= (:body by-id-response) created)))))
+         (is (= by-id-response created)))))
 
 (deftest error-by-id
   (testing "should return 400")
-  (let [response (-> (mock/request :get (str "/api/patients/" 1)) patients/app)]
+  (let [response (-> (mock/request :get (str "/api/patients/" 0)) patients/app)]
     (is (= (:status response) 400))))
 
 (deftest update-patient
   (testing "should correctly update patient")
-  (let [id (-> (mock/request :get "/api/patients")
-               patients/app
-               parse-body
-               :body
-               first
-               :id)
+  (let [[patients] (-> (mock/request :get "/api/patients")
+                       patients/app
+                       parse-body
+                       :body)
+        id (:id (first patients))
         update-response (-> (mock/request :put (str "/api/patients/" id) {:first_name "michael"}) patients/app parse-body)]
     (is (= (:body update-response) [1]))))
 
 (deftest update-patient-failure
   (testing "should return 400 with errors")
-  (let [id (-> (mock/request :get "/api/patients")
-               patients/app
-               parse-body
-               :body
-               first
-               :id)
-        update-response (-> (mock/request :put (str "/api/patients/" id) {:first_name 123 }) patients/app parse-body)]
-    (and 
-      (is (= (:status update-response) 400))
-      (is (= (empty? (:body update-response)) false)))))
+  (let [[patients] (-> (mock/request :get "/api/patients")
+                       patients/app
+                       parse-body
+                       :body)
+        id (:id (first patients))        update-response (-> (mock/request :put (str "/api/patients/" id) {:first_name 123}) patients/app parse-body)]
+    (and
+     (is (= (:status update-response) 400))
+     (is (= (empty? (:body update-response)) false)))))
 
 (deftest delete-patients
   (testing "should correctly delete patient")
-  (let [id (-> (mock/request :get "/api/patients")
-               patients/app
-               parse-body
-               :body
-               first
-               :id)
+  (let [[patients] (-> (mock/request :get "/api/patients")
+                       patients/app
+                       parse-body
+                       :body)
+        id (:id (first patients))
         delete-response (-> (mock/request :delete (str "/api/patients/" id)) patients/app parse-body)]
     (is (= (:body delete-response) [1]))))
 

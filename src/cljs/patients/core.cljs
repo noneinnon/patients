@@ -9,23 +9,70 @@
    [patients.subs :as subs]
    ["react-dom/client" :refer [createRoot]]))
 
+(def log (.-log js/console))
 ;; views
 ;; ----------------------------------------------------------------------------
+(defn header []
+  [:header
+   [:h1 "Patients app"]
+   [:nav
+    [:a {:href (rfe/href ::patients-list)} "Patients list"]
+    [:a {:href (rfe/href ::new)} "Create"]]])
+
+(defn filter-panel []
+  [:form {:on-submit (fn [e]
+                       (.preventDefault e)
+                       (let [form (new js/FormData (.-target e))
+                             filter-name (.get form "filter-name")
+                             filter-value (.get form "filter-value")]
+                         (re-frame/dispatch [::events/fetch-patients {filter-name filter-value}])))}
+   [:p "filter by:"]
+   [:select {:name "filter-name"}
+    [:option {:value "first_name"} "first name"]
+    [:option {:value "last_name"} "last name"]
+    [:option {:value "age"} "age"]
+    [:option {:value "dob"} "date of birth"]
+    [:option {:value "address"} "address"]
+    [:option {:value "insurance_number"} "insurance number"]]
+   [:input {:name "filter-value" :placeholder "enter value"}]
+   [:button "filter"]])
+
+(defn patient-row [{:keys [id first_name last_name age insurance_number dob address]}]
+  [:tr {:key id :on-click (fn [e]
+                            (let [target (.-target e)]
+                              (if (= (.getAttribute target "name") "clickable")
+                                (rfe/push-state ::patient {:id id})
+                                0)))}
+   [:td {:name "clickable"} first_name]
+   [:td {:name "clickable"} last_name]
+   [:td {:name "clickable"} age]
+   [:td {:name "clickable"} dob]
+   [:td {:name "clickable"} insurance_number]
+   [:td {:name "clickable"} address]
+   [:td {:name "controls"}
+    [:button "✏️"]
+    [:button "❌"]]])
+
 (defn patients-list []
-  (let [patients (re-frame/subscribe [::subs/patients])
-        state (re-frame/subscribe [::subs/state])]
+  (let [patients (re-frame/subscribe [::subs/patients])]
     (reagent/create-class
      {:component-did-mount (fn []
                              (re-frame/dispatch [::events/fetch-patients]))
       :reagent-render (fn []
-                        [:ul
-                         [:h1 @state]
+                        [:section.container
+                         [filter-panel]
                          (if (not-empty @patients)
-                           (for [patient @patients]
-                             [:a {:key (:id patient)
-                                  :href (rfe/href ::patient {:id (:id patient)})}
-                              [:li.patient-container (:first_name patient) (:last_name patient) (:age patient)]])
-                           [:li "No patients found"])])})))
+                           [:table
+                            [:thead
+                             [:th "first name"]
+                             [:th "last name"]
+                             [:th "age"]
+                             [:th "date of birth"]
+                             [:th "insurance number"]
+                             [:th "address"]]
+                            [:tbody
+                             (map patient-row @patients)]]
+                           [:p "No patients found"])])})))
 
 (defn create-new-patient []
   [:form
@@ -54,10 +101,8 @@
 (defonce match (atom nil))
 
 (defn current-page []
-  [:div
-   [:ul
-    [:li [:a {:href (rfe/href ::patients-list)} "Patients list"]]
-    [:li [:a {:href (rfe/href ::new)} "Create"]]]
+  [:div.content
+   [header]
    (if @match
      ; (println str (:data @match))
      (let [view (:view (:data @match))]
@@ -87,7 +132,7 @@
      (rf/router routes {:data {:coercion rss/coercion}})
      (fn [m] (reset! match m))
           ;; set to false to enable HistoryAPI
-     {:use-fragment true})
+     {:use-fragment false})
     [:main [current-page]]))
 
 ;; ----------------------------------------------------------------------------

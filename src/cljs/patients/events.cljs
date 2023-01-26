@@ -29,17 +29,15 @@
 
 (re-frame/reg-event-db
  ::fetch-patients-success
- (fn [db [_ data]]
+ (fn [db [_ [patients total]]]
    (-> db
-       (assoc :state :success)
-       (assoc :patients data))))
+       (assoc :state :success :patients patients :total total))))
 
 (re-frame/reg-event-db
  ::fetch-patients-failure
  (fn [db [_ {:keys [data]}]]
    (-> db
-       (assoc :state :failure)
-       (assoc :error data))))
+       (assoc :state :failure :error data))))
 
 (re-frame/reg-event-fx
  ::fetch-patient
@@ -55,14 +53,12 @@
 
 (re-frame/reg-event-db
  ::fetch-patient-success
- (fn [db [_ data]]
+ (fn [db [_ [patient]]]
    (-> db
-       (assoc :state :success)
-       (assoc :patient data))))
+       (assoc :state :success :patient patient))))
 
 (re-frame/reg-event-db
  ::fetch-patient-failure
  (fn [db [_ {:keys [data]}]]
    (-> db
-       (assoc :state :failure)
-       (assoc :error data))))
+       (assoc :state :failure :error data))))

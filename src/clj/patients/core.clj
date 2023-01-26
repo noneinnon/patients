@@ -73,6 +73,13 @@
                                                      :order order
                                                      :age (helpers/parse-int age)))))))
 
+(defn logger
+  "simple logging middleware"
+  [handler]
+  (fn [request]
+    (prn (select-keys request [:request-method :uri :params]))
+    (handler request)))
+
 ;; handlers
 (defn home-page [_]
   (-> (slurp (io/resource "public/index.html"))
@@ -87,7 +94,7 @@
 
 (defn get-single-patient [req]
   (let [id (get-path-param req :id)
-        patient (db/get-patients (assoc (:query-params req) :id id))]
+        [patient] (db/get-patients (assoc (:query-params req) :id id))]
     (if (not-empty patient)
       (-> patient
           (r/response))
@@ -115,7 +122,7 @@
 (def app
   (ring/ring-handler
    (ring/router
-    ["/"
+    ["/" 
      ["api/"
       ["patients" {:middleware [wrap-params convert-params]}
        ["/:id" {:get get-single-patient :delete delete-patient :put {:handler update-patient :middleware [validate-update-patient-data]}}]
@@ -125,11 +132,11 @@
      ["js/*" (ring/create-resource-handler {:root "public/js"})]
      ["" {:get home-page}]]
     {:data {:muuntaja m/instance
-            :middleware [mw-params/wrap-params muuntaja/format-middleware]}})))
+            :middleware [mw-params/wrap-params muuntaja/format-middleware logger]}})))
 
 (defn start []
-  (ring-jetty/run-jetty (logger/wrap-with-logger app) {:port 3001
-                                                       :join? false}))
+  (ring-jetty/run-jetty app {:port 3001
+                             :join? false}))
 
 (comment
   (def server (start))

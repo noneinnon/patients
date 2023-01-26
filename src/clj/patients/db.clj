@@ -35,29 +35,36 @@
 (defn query [q]
   (j/query pg-db q))
 
+;; https://cljdoc.org/d/com.github.seancorfield/honeysql/2.4.969/doc/getting-started
 (defn get-patients [{:keys [first_name
                             last_name
-                            id
                             age
+                            id
                             address
                             insurance_number
                             sort-param
                             order
                             offset
                             limit]}]
-  (query (-> (h/select :*)
-             (h/from :patients)
-             (h/where :and
-                      (when id [:= :patients.id id])
-                      (when first_name [pg-ops/iregex :patients.first_name first_name])
-                      (when last_name [pg-ops/iregex :patients.last_name last_name])
-                      (when address [pg-ops/iregex :patients.address address])
-                      (when age [:= :patients.age age])
-                      (when insurance_number [:= :patients.age insurance_number]))
-             (h/order-by [sort-param order])
-             (h/offset offset)
-             (h/limit limit)
-             (sql/format))))
+  (let [where #(h/where % :and
+                        (when id [:= :patients.id id])
+                        (when first_name [pg-ops/iregex :patients.first_name first_name])
+                        (when last_name [pg-ops/iregex :patients.last_name last_name])
+                        (when address [pg-ops/iregex :patients.address address])
+                        (when age [:= :patients.age age])
+                        (when insurance_number [:= :patients.insurance_number insurance_number]))
+        patients (query (-> (h/select :*)
+                            (h/from :patients)
+                            (where)
+                            (h/order-by [sort-param order])
+                            (h/offset offset)
+                            (h/limit limit)
+                            (sql/format)))
+        [{total :total}] (query (-> (h/select [:%count.* "total"])
+                         (h/from :patients)
+                         (where)
+                         (sql/format)))]
+    [patients total]))
 
 (defn create-patient [patient]
   (j/insert! pg-db :patients patient))
