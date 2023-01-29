@@ -35,6 +35,9 @@
 (defn query [q]
   (j/query pg-db q))
 
+(defn get-patient-data [data]
+  (select-keys data [:first_name :last_name :age :dob :sex :address :insurance_number]))
+
 ;; https://cljdoc.org/d/com.github.seancorfield/honeysql/2.4.969/doc/getting-started
 (defn get-patients [{:keys [first_name
                             last_name
@@ -61,17 +64,23 @@
                             (h/limit limit)
                             (sql/format)))
         [{total :total}] (query (-> (h/select [:%count.* "total"])
-                         (h/from :patients)
-                         (where)
-                         (sql/format)))]
+                                    (h/from :patients)
+                                    (where)
+                                    (sql/format)))]
     [patients total]))
 
 (defn create-patient [patient]
-  (j/insert! pg-db :patients patient))
+  (j/insert! pg-db :patients (get-patient-data patient)))
 
 (defn update-patient [id updates]
-  (j/update! pg-db :patients updates ["id = ?" id]))
+  (j/update! pg-db :patients (get-patient-data updates) ["id = ?" id]))
 
 (defn delete-patient [id]
   (j/delete! pg-db :patients ["id = ?" id]))
 
+(comment
+  (first (get-patients {:sort-param :first_name :order :asc :offset 0 :limit 1}))
+  (query (-> (h/select :first_name)
+             (h/from :patients)
+             (h/order-by "first_name")
+             (sql/format))))

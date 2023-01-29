@@ -1,11 +1,15 @@
 ## Running project locally
 
-- run `make repl` to start the repl project 
-- eval `src/clj/patients/core.clj` to start server
-- run `make shadow` to start the UI server 
+- run `make repl` to start the repl 
+- eval `dev/repl.clj` to spin up shadow cljs embedded server
+- eval `src/clj/patients/core.clj` to start jetty web server
 
-### Optionally:
+### Neovim & Conjure:
+
+We will need two sessions: one for Clojure and other for ClojureScript
+- run `:ConjureSessionClone` to clone current session
 - run in neovim `:ConjureShadowSelect app` to connect to sdadow-cljs repl from Conjure
+- to switch between session, run `:ConjureSessionSelect`, it will bring up the list and prompt you for session number
 
 ### Environment
 

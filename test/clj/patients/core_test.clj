@@ -67,13 +67,13 @@
 
 (deftest get-all-patients
   (testing "should return patient list")
-  (let [response (-> (mock/request :get "/api/patients" {:sort :first_name})
+  (let [response (-> (mock/request :get "/api/patients" {:sort-param "first_name" :order "asc"})
                      patients/app
                      parse-body)
         [patients total] (:body response)]
     (and (is (= (:status response) 200))
          (is (= total 3))
-         (is (= (:name (first patients)) (:name (last patients-fixture)))))))
+         (is (= (:first_name (first patients)) "george")))))
 
 (deftest get-filtered-patients
   (testing "correctly filters out")
@@ -86,16 +86,23 @@
 
 (deftest create-patient
   (testing "should correctly create new patient")
-  (let [patient {:first_name "ringo" :last_name "starr" :age 40 :sex "m" :insurance_number "1234567890123" :address "Liverpool, Penny Lane, 8" :dob (helpers/string-to-date "1940-10-09")}
+  (let [patient {:first_name "ringo" :last_name "starr" :age "40" :sex "m" :insurance_number "1234567890123" :address "Liverpool, Penny Lane, 8" :dob "1940-10-09"}
         response (-> (mock/request :post "/api/patients" patient) patients/app parse-body)
-        [created] (:body response)
+        created (first (:body response))
         by-id-response (-> (mock/request :get (str "/api/patients/" (:id created)))
                            patients/app
                            parse-body
-                           :body
-                           first)]
+                           :body)]
+    (prn created)
     (and (is (= (:status response) 201))
-         (is (= by-id-response created)))))
+         (is (= by-id-response (:body response))))))
+
+(deftest create-patient-failure
+  (testing "should return 400 with errors")
+  (let [patient {:first_name "1234" :last_name "54321" :age "asd" :sex "l" :insurance_number "123456789a" :address "Liverpool, Penny Lane, 8" :dob "1940-99-09"}
+        response (-> (mock/request :post "/api/patients" patient) patients/app parse-body)]
+    (and (is (= (:status response) 400))
+         (is (= true true)))))
 
 (deftest error-by-id
   (testing "should return 400")
@@ -109,7 +116,8 @@
                        parse-body
                        :body)
         id (:id (first patients))
-        update-response (-> (mock/request :put (str "/api/patients/" id) {:first_name "michael"}) patients/app parse-body)]
+        update-response (-> (mock/request :put (str "/api/patients/" id) {"first_name" "paul", "last_name" "mccartney", "sex" "m", "age" "40", "dob" "2020-10-24", "insurance_number" "1234567890123", "address" "Liverpool, Penny Lane, 8", "id" "659"}) patients/app parse-body)]
+    (prn (:body update-response))
     (is (= (:body update-response) [1]))))
 
 (deftest update-patient-failure
@@ -118,7 +126,8 @@
                        patients/app
                        parse-body
                        :body)
-        id (:id (first patients))        update-response (-> (mock/request :put (str "/api/patients/" id) {:first_name 123}) patients/app parse-body)]
+        id (:id (first patients))
+        update-response (-> (mock/request :put (str "/api/patients/" id) {:first_name 123}) patients/app parse-body)]
     (and
      (is (= (:status update-response) 400))
      (is (= (empty? (:body update-response)) false)))))
