@@ -1,10 +1,10 @@
 (ns patients.views
   (:require
-   [reagent.core :as reagent]
-   [re-frame.core :as re-frame]
    [patients.events :as events]
-   [patients.subs :as subs]
    [patients.helpers :refer [get-patient-form-data]]
+   [patients.subs :as subs]
+   [re-frame.core :as re-frame]
+   [reagent.core :as reagent]
    [reitit.frontend.easy :as rfe]))
 
 (defn header []
@@ -23,8 +23,7 @@
                          filter-name (keyword (.get form "filter-name"))
                          filter-value (.get form "filter-value")
                          params {filter-name filter-value}]
-                     (rfe/push-state :patients-list {} params)
-                     (re-frame/dispatch [::events/fetch-patients params])))}
+                     (when (not-empty filter-value) (rfe/push-state :patients-list {} params))))}
 
      [:select.grow {:name "filter-name"}
       [:option {:value "first_name"} "first name"]
@@ -43,7 +42,24 @@
       "cancel"]
      [:button.p-2.px-4.bg-violet-700.text-white.rounded-lg.shadow-s "filter"]]))
 
-(defn patient-row [{:keys [id first_name last_name insurance_number]}]
+(defn pagination-panel []
+  (let [query @(re-frame/subscribe [::subs/query])
+        total @(re-frame/subscribe [::subs/total])
+        limit (int (:limit query))
+        offset (int (:offset query))
+        next-offset (+ limit offset)
+        prev-offset (max (- offset limit) 0)
+        next-disabled (> 0 (- total (+ offset limit)))]
+    [:div.flex
+     [:select {:value (:limit query)
+               :on-change (fn [e] (rfe/push-state :patients-list {} {:limit (.. e -target -value)}))}
+      [:option {:value 10} 10]
+      [:option {:value 20} 20]
+      [:option {:value 30} 30]]
+     [:button.py-2.px-4.rounded-s {:disabled (= offset 0) :on-click (fn [] (rfe/push-state :patients-list {} (assoc query :offset prev-offset)))} "<"]
+     [:button.py-2.px-4.rounded-s {:disabled next-disabled :on-click (fn [] (rfe/push-state :patients-list {} (assoc query :offset next-offset)))} ">"]]))
+
+(defn patient-row [{:keys [id address sex first_name last_name insurance_number]}]
   [:tr {:class-name "p-1 hover:cursor-pointer hover:bg-gray-200"
         :key id
         :on-click (fn [e]
@@ -54,7 +70,9 @@
    [:td.p-2 {:name "clickable"} id]
    [:td.p-2 {:name "clickable"} first_name]
    [:td {:name "clickable"} last_name]
+   [:td {:name "clickable"} sex]
    [:td {:name "clickable"} insurance_number]
+   [:td {:name "clickable"} address]
    [:td.flex.items-center {:name "controls"}
     [:button {:on-click #(re-frame/dispatch [::events/delete-patient {:id id}])} "❌"]]])
 
@@ -76,23 +94,28 @@
       "font-bold"
       "font-thin")))
 
-(defn patients-list [match]
-  (let [params (:query-params match)
+(defn patients-list []
+  (let [total (re-frame/subscribe [::subs/total])
         patients (re-frame/subscribe [::subs/patients])]
     (fn []
       [:section
        [filter-panel]
        (if (not-empty @patients)
-         [:table.w-full.mx-0.rounded-lg.shadow-md.border-1
-          [:thead.bg-gray-100.text-l.border-b-2
-           [:tr.hover:cursor-pointer {:on-click sort-handler}
-            [:th.text-left.p-2 {:class (add-selected-styles "id") :data-name "id"} "id"]
-            [:th.text-left.p-2 {:class (add-selected-styles "first_name") :data-name "first_name"} "first name"]
-            [:th.text-left. {:class (add-selected-styles "last_name") :data-name "last_name"} "last name"]
-            [:th.text-left. {:class (add-selected-styles "insurance_number") :data-name "insurance_number"} "insurance number"]
-            [:th.text-left.font-thin "remove"]]]
-          [:tbody
-           (map patient-row @patients)]]
+         [:div [:table.w-full.mx-0.rounded-lg.shadow-md.border-1
+                [:thead.bg-gray-100.text-l.border-b-2
+                 [:tr.hover:cursor-pointer {:on-click sort-handler}
+                  [:th.text-left.p-2 {:class (add-selected-styles "id") :data-name "id"} "id"]
+                  [:th.text-left.p-2 {:class (add-selected-styles "first_name") :data-name "first_name"} "first name"]
+                  [:th.text-left. {:class (add-selected-styles "last_name") :data-name "last_name"} "last name"]
+                  [:th.text-left. {:class (add-selected-styles "sex") :data-name "sex"} "sex"]
+                  [:th.text-left. {:class (add-selected-styles "insurance_number") :data-name "insurance_number"} "insurance number"]
+                  [:th.text-left. {:class (add-selected-styles "address") :data-name "address"} "address"]
+                  [:th.text-left.font-thin "remove"]]]
+                [:tbody
+                 (map patient-row @patients)]]
+          [:div.flex.justify-between.p-1
+           [pagination-panel]
+           [:p "Total: " @total]]]
          [:p "No patients found"])])))
 
 (defn patient-view [initial-values on-submit]

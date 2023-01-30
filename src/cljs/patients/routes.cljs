@@ -1,12 +1,13 @@
 (ns patients.routes
   (:require
-   [reitit.frontend :as rf]
-   [reitit.frontend.easy :as rfe]
-   [reitit.coercion.spec :as rss]
-   [patients.views :as views]
    [patients.events :as events]
+   [patients.helpers :as helpers]
+   [patients.subs :as subs]
+   [patients.views :as views]
    [re-frame.core :as re-frame]
-   [patients.subs :as subs]))
+   [reitit.coercion.spec :as rss]
+   [reitit.frontend :as rf]
+   [reitit.frontend.easy :as rfe]))
 
 (defn current-page []
   (let [match @(re-frame/subscribe [::subs/match])]
@@ -23,7 +24,15 @@
      :view views/patients-list
      :controllers [{:parameters {:query [:limit :offset :sort-param :order :first_name :last_name :age :insurance_number]}
                     :start (fn [{:keys [query]}]
-                             (re-frame/dispatch [::events/fetch-patients query]))}]}]
+                             (let [limit (:limit query)
+                                   offset (:offset query)]
+                               (if (or (not limit)
+                                       (not offset))
+                                 (rfe/replace-state :patients-list {}
+                                                    (cond-> query
+                                                      (not limit) (assoc :limit 20)
+                                                      (not offset) (assoc :offset 0)))
+                                 (re-frame/dispatch [::events/fetch-patients query]))))}]}]
 
    ["/new"
     {:name :new
