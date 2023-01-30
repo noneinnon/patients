@@ -4,10 +4,7 @@
             [honey.sql.pg-ops :as pg-ops]
             [honey.sql.helpers :as h]
             ;; https://clojure-doc.org/articles/ecosystem/java_jdbc/home/
-            [clojure.java.jdbc :as j]
-            [ragtime.jdbc :as jdbc]
-            [clojure.string :refer [join]]
-            [ragtime.repl :as repl]))
+            [clojure.java.jdbc :as j]))
 
 ;; config
 (def pg-db {:dbtype "postgresql"
@@ -17,19 +14,21 @@
             :user (env :DB_USER)
             :password (env :DB_PASSWORD)})
 
-;; migrations
-;; TODO make migrations work
-; (defn create-config
-;   "creates a config map for ragtime"
-;   []
-;   {:datastore (jdbc/sql-database pg-db)
-;    :migrations (jdbc/load-resources "migrations")})
-
-; (defn migrate []
-;   (repl/migrate (create-config)))
+(def create-table "create table if not exists patients (
+                                id serial primary key, 
+                                first_name varchar(255) not null,
+                                last_name varchar(255) not null,
+                                age int not null,
+                                sex varchar(1) not null,
+                                dob date not null,
+                                insurance_number varchar(70) not null,
+                                address varchar(500) not null,
+                                createdAt timestamp not null default now(),
+                                updatedAt timestamp not null default now());")
 ;
-; (defn rollback []
-;   (repl/rollback (create-config)))
+; (j/db-do-commands pg-db [(format "create database if not exists %s;" (env :DB_NAME))])
+;
+; (j/db-do-commands pg-db [create-table])
 
 ;; CRUD
 (defn query [q]

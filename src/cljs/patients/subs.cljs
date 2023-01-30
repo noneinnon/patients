@@ -17,3 +17,12 @@
  (fn [db]
    (:state db)))
 
+(re-frame/reg-sub
+  ::match
+  (fn [db]
+    (:match db)))
+
+(re-frame/reg-sub
+  ::query
+  (fn [db]
+    (get-in db [:match :query-params])))

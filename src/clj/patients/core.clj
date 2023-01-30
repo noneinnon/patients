@@ -69,6 +69,13 @@
                                           dob (assoc :dob (helpers/string-to-date dob))
                                           age (assoc :age (helpers/parse-int age))))))))
 
+(defn logger
+  "simple logging middleware"
+  [handler]
+  (fn [request]
+    (prn (select-keys request [:request-method :uri :params :form-params]))
+    (handler request)))
+
 (defn convert-params
   "Makes sure that selected paramteres value is present"
   [handler]
@@ -82,13 +89,6 @@
                                                :order (keyword order)
                                                ; :dob (helpers/string-to-date dob)
                                                :age (helpers/parse-int age)))))))
-
-(defn logger
-  "simple logging middleware"
-  [handler]
-  (fn [request]
-    (prn (select-keys request [:request-method :uri :params :form-params]))
-    (handler request)))
 
 ;; handlers
 (defn home-page [_]
@@ -166,7 +166,7 @@
                          logger]}})))
 
 (defn start []
-  (ring-jetty/run-jetty app {:port 3001
+  (ring-jetty/run-jetty #'app {:port 3001
                              :join? false}))
 
 (defn -main []

@@ -3,6 +3,7 @@
    [re-frame.core :as re-frame]
    [patients.db :as db]
    [ajax.core :as ajax]
+   [reitit.frontend.controllers :as rfc]
    [day8.re-frame.http-fx]
    [reitit.frontend.easy :as rfe]))
 
@@ -10,6 +11,13 @@
  ::initialize-db
  (fn []
    db/default-db))
+
+(re-frame/reg-event-db
+ ::set-match
+ (fn [db [_ new-match]]
+   (assoc db :match
+          (assoc new-match :controllers
+                 (rfc/apply-controllers (get-in db [:match :data :controllers]) new-match)))))
 
 (re-frame/reg-event-fx        ;; <-- note the `-fx` extension
  ::fetch-patients        ;; <-- the vent id
@@ -39,7 +47,6 @@
 (re-frame/reg-event-fx
  ::update-patient
  (fn [{db :db} [_ params]]
-   (prn params)
    {:http-xhrio {:method :put
                  :uri (str "/api/patients/" (:id params))
                  :params params

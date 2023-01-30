@@ -19,22 +19,12 @@
 ; Migrations must be applied as well
 ;--------------------------------------------------
 ; fixuture hooks
-(def create-db "create table if not exists patients (
-                                id serial primary key, 
-                                first_name varchar(255) not null,
-                                last_name varchar(255) not null,
-                                age int not null,
-                                sex varchar(1) not null,
-                                dob date not null,
-                                insurance_number varchar(70) not null,
-                                address varchar(500) not null,
-                                createdAt timestamp not null default now(),
-                                updatedAt timestamp not null default now());")
+
 
 (def patients-fixture [{:first_name "john" :last_name "lennon" :age 40 :sex "m" :insurance_number "1234567890123" :address "Liverpool, Penny Lane, 8" :dob (helpers/string-to-date "1940-10-09")} {:first_name "paul" :last_name "mccartney" :age 40 :sex "m" :insurance_number "1234567890123" :address "Liverpool, Penny Lane, 8" :dob (helpers/string-to-date "1940-10-09")} {:first_name "george" :last_name "harrison" :age 40 :sex "m" :insurance_number "1234567890123" :address "Liverpool, Penny Lane, 8" :dob (helpers/string-to-date "1940-10-09")}])
 
 (defn setup []
-  (j/db-do-commands db/pg-db [create-db])
+  (j/db-do-commands db/pg-db [db/create-table])
   (j/insert-multi! db/pg-db :patients patients-fixture))
 
 (defn clean-up []
