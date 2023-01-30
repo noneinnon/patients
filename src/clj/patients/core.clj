@@ -14,7 +14,8 @@
             [clojure.edn :as edn]
             [bouncer.core :as b]
             [bouncer.validators :as v]
-            [patients.db :as db]))
+            [patients.db :as db])
+  (:gen-class))
 
 (defn get-path-param [req param-name]
   (-> (get-in req [:path-params param-name])
@@ -167,6 +168,10 @@
 (defn start []
   (ring-jetty/run-jetty app {:port 3001
                              :join? false}))
+
+(defn -main []
+  (prn "starting server")
+  (start))
 
 (comment
   (app {:request-method :get :uri "/api/patients/665" :headers {}})

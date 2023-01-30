@@ -1,15 +1,20 @@
-all:
-	source .env && sh ./echo_env.sh
+echo-env:
+	sh ./echo_env.sh
 
 repl:
-	make server & make front
+	npx env-cmd clj -M:repl/conjure
 
-server:
-	make all & clj -M:repl/conjure
-
-front:
-	npx shadow-cljs watch app
+shadow:
+	npx shadow-cljs watch app & npm run tailwind:watch
 
 run_test: 
-	DB_NAME="patients_test" make all & clj -M:test
+	npx env-cmd --file .env.test clj -M:test
 
+build-clj:
+	clj -T:build uber
+
+build-cljs:
+	npx shadow-cljs release app
+
+build:
+	npm ci && make build-cljs && make build-clj

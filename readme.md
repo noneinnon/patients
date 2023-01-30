@@ -13,8 +13,11 @@ We will need two sessions: one for Clojure and other for ClojureScript
 
 ### Environment
 
-Environment variables should be declared in `.env` file.
-Needed variables are listed in `.env.example`.
+Environment variables should be declared in:
+ - `./.env` for developing repl
+ - `./.env.test` for test runner
+
+Required variables are listed in `.env.example`.
 
 ## Migrations
 

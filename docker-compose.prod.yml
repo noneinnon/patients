@@ -1,0 +1,25 @@
+version: '3.1'
+
+services:
+  app:
+    image: patients
+    build:
+      context: .
+    entrypoint: bin/entrypoint.sh
+    restart: always
+    environment:
+      DB_NAME: $DB_NAME
+      DB_USER: $DB_USER
+      DB_PASSWORD: $DB_PASSWORD
+      DB_HOST: $DB_HOST
+      DB_PORT: $DB_PORT
+    ports:
+      - 80:3001
+    links:
+      - "db:database"
+  db:
+    image: postgres 
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: postgres

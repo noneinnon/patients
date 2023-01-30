@@ -12,7 +12,7 @@
    db/default-db))
 
 (re-frame/reg-event-fx        ;; <-- note the `-fx` extension
- ::fetch-patients        ;; <-- the event id
+ ::fetch-patients        ;; <-- the vent id
  (fn                ;; <-- the handler function
    [{db :db} [_ params]]     ;; <-- 1st argument is coeffect, from which we extract db 
     ;; we return a map of (side) effects

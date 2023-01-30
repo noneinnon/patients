@@ -19,7 +19,7 @@
 ;; ----------------------------------------------------------------------------
 (defn header []
   [:header.flex.h-24.items-center.px-2
-   [:h1.mb-2.uppercase.text-xl "Patients app"]
+   [:h1.mb-2.uppercase.text-xl "The awesome Patients app"]
    [:nav.ml-auto.mb-2.flex.text-gray-600.items-center.gap-2
     [:a {:href (rfe/href :patients-list)} "Patients list"]
     [:a.p-2.px-4.bg-violet-700.text-white.rounded-lg.shadow-md {:href (rfe/href :new)} "Create"]]])
