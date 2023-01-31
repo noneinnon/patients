@@ -31,3 +31,9 @@
  ::total
  (fn [db]
    (:total db)))
+
+(re-frame/reg-sub
+ ::notifications
+ (fn [db]
+   (:notifications db)))
+

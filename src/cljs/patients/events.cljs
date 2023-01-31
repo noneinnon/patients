@@ -7,6 +7,9 @@
    [day8.re-frame.http-fx]
    [reitit.frontend.easy :as rfe]))
 
+(defn create-notification [level message]
+  {:id (new js/Date) :level level :message message})
+
 (re-frame/reg-event-db
  ::initialize-db
  (fn []
@@ -52,9 +55,19 @@
                  :params params
                  :format          (ajax/url-request-format)
                  :response-format (ajax/json-response-format {:keywords? true})
-                 :on-success [::move-to-patients-list]
-                 :on-failure [::move-to-patients-list]}
-    :db (assoc db :state :loading)}))
+                 :on-success [::on-update-success]
+                 :on-failure [::on-update-failure]}}))
+
+(re-frame/reg-event-fx
+ ::on-update-success
+ (fn [_ _]
+   {:fx [[:dispatch [::move-to-patients-list]]
+         [:dispatch [::notify (create-notification :info "successfully updated!")]]]}))
+
+(re-frame/reg-event-fx
+ ::on-update-failure
+ (fn [_ _]
+   {:fx [[:dispatch [::notify (create-notification :error "there was an error updating")]]]}))
 
 (re-frame/reg-event-fx
  ::delete-patient
@@ -63,8 +76,19 @@
                  :uri (str "/api/patients/" id)
                  :format          (ajax/json-request-format)
                  :response-format (ajax/json-response-format {:keywords? true})
-                 :on-success [::fetch-patients]}
-    :db (assoc db :state :loading)}))
+                 :on-success [::on-delete-success]
+                 :on-failure [::on-delete-failure]}}))
+
+(re-frame/reg-event-fx
+ ::on-delete-success
+ (fn [_ _]
+   {:fx [[:dispatch [::fetch-patients]]
+         [:dispatch [::notify (create-notification :info "successfully deleted!")]]]}))
+
+(re-frame/reg-event-fx
+ ::on-delete-failure
+ (fn [_ _]
+   {:fx [[:dispatch [::notify (create-notification :error "there was an error deleting patient")]]]}))
 
 (re-frame/reg-event-fx
  ::fetch-patient
@@ -108,3 +132,19 @@
  (fn [db [_ {:keys [data]}]]
    (-> db
        (assoc :state :failure :error data))))
+
+(re-frame/reg-event-fx
+ ::notify
+ (fn [{:keys [db]} [_ data]]
+   {:db (update db :notifications #(assoc % (:id data) data))
+    :dispatch-later {:ms 5000 :dispatch [::remove-notification data]}}))
+
+(re-frame/reg-event-db
+ ::remove-notification
+ (fn [db [_ data]]
+   (-> db
+       (update :notifications #(dissoc % (:id data))))))
+
+(comment
+  (.alert js/window "hey")
+  (re-frame/dispatch [::notify {:id 1 :level :info :message "hello"}]))

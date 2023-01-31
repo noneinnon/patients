@@ -1,10 +1,11 @@
 (ns patients.core
   (:require
-   [reagent.core :as reagent]
-   [re-frame.core :as re-frame]
+   ["react-dom/client" :refer [createRoot]]
    [patients.events :as events]
-   [patients.routes :refer [start-router current-page]]
-   ["react-dom/client" :refer [createRoot]]))
+   [patients.routes :refer [current-page start-router]]
+   [patients.views :refer [notifications-list]]
+   [re-frame.core :as re-frame]
+   [reagent.core :as reagent]))
 
 ;; main
 ;; ----------------------------------------------------------------------------
@@ -12,7 +13,7 @@
 (defn- main []
   (fn []
     (start-router)
-    [:main.p-2 [current-page]]))
+    [:main.p-2 [current-page] [notifications-list]]))
 
 ;; ----------------------------------------------------------------------------
 

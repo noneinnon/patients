@@ -165,3 +165,11 @@
                                                                           (assoc (get-patient-form-data form) :id patient-id)]))]]
           [:section "No patient with this ID exist"])))))
 
+(defn display-notifications [[id data]]
+  [:div.p-5.rounded-md.shadow-md.mb-5 {:key id
+                                       :class (get {:info "bg-green-500" :warning "bg-yellow-500" :error "bg-red-500"} (:level data) "bg-white")}
+   [:p (:message data)]])
+
+(defn notifications-list []
+  (let [notifications @(re-frame/subscribe [::subs/notifications])]
+    [:section.absolute.bottom-0 (map display-notifications notifications)]))

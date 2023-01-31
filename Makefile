@@ -5,7 +5,7 @@ repl:
 	npx env-cmd clj -M:repl/conjure
 
 shadow:
-	npx shadow-cljs watch app & npm run tailwind:watch
+	npm run tailwind:watch
 
 run_test: 
 	npx env-cmd --file .env.test clj -M:test
