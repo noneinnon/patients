@@ -7,6 +7,9 @@
    [reagent.core :as reagent]
    [reitit.frontend.easy :as rfe]))
 
+(defn loading-indicator []
+  [:div "Loading"])
+
 (defn header []
   [:header.flex.h-24.items-center.px-2
    [:h1.mb-2.uppercase.text-xl "The awesome Patients app"]
@@ -49,7 +52,7 @@
         offset (int (:offset query))
         next-offset (+ limit offset)
         prev-offset (max (- offset limit) 0)
-        next-disabled (> 0 (- total (+ offset limit)))]
+        next-disabled (>= 0 (- total (+ offset limit)))]
     [:div.flex
      [:select {:value (:limit query)
                :on-change (fn [e] (rfe/push-state :patients-list {} {:limit (.. e -target -value)}))}
@@ -95,28 +98,31 @@
       "font-thin")))
 
 (defn patients-list []
-  (let [total (re-frame/subscribe [::subs/total])
+  (let [state (re-frame/subscribe [::subs/state])
+        total (re-frame/subscribe [::subs/total])
         patients (re-frame/subscribe [::subs/patients])]
     (fn []
       [:section
        [filter-panel]
-       (if (not-empty @patients)
-         [:div [:table.w-full.mx-0.rounded-lg.shadow-md.border-1
-                [:thead.bg-gray-100.text-l.border-b-2
-                 [:tr.hover:cursor-pointer {:on-click sort-handler}
-                  [:th.text-left.p-2 {:class (add-selected-styles "id") :data-name "id"} "id"]
-                  [:th.text-left.p-2 {:class (add-selected-styles "first_name") :data-name "first_name"} "first name"]
-                  [:th.text-left. {:class (add-selected-styles "last_name") :data-name "last_name"} "last name"]
-                  [:th.text-left. {:class (add-selected-styles "sex") :data-name "sex"} "sex"]
-                  [:th.text-left. {:class (add-selected-styles "insurance_number") :data-name "insurance_number"} "insurance number"]
-                  [:th.text-left. {:class (add-selected-styles "address") :data-name "address"} "address"]
-                  [:th.text-left.font-thin "remove"]]]
-                [:tbody
-                 (map patient-row @patients)]]
-          [:div.flex.justify-between.p-1
-           [pagination-panel]
-           [:p "Total: " @total]]]
-         [:p "No patients found"])])))
+       (case @state
+         :loading [loading-indicator]
+         (if (not-empty @patients)
+           [:div [:table.w-full.mx-0.rounded-lg.shadow-md.border-1
+                  [:thead.bg-gray-100.text-l.border-b-2
+                   [:tr.hover:cursor-pointer {:on-click sort-handler}
+                    [:th.text-left.p-2 {:class (add-selected-styles "id") :data-name "id"} "id"]
+                    [:th.text-left.p-2 {:class (add-selected-styles "first_name") :data-name "first_name"} "first name"]
+                    [:th.text-left. {:class (add-selected-styles "last_name") :data-name "last_name"} "last name"]
+                    [:th.text-left. {:class (add-selected-styles "sex") :data-name "sex"} "sex"]
+                    [:th.text-left. {:class (add-selected-styles "insurance_number") :data-name "insurance_number"} "insurance number"]
+                    [:th.text-left. {:class (add-selected-styles "address") :data-name "address"} "address"]
+                    [:th.text-left.font-thin "remove"]]]
+                  [:tbody
+                   (map patient-row @patients)]]
+            [:div.flex.justify-between.p-1
+             [pagination-panel]
+             [:p "Total: " @total]]]
+           [:p "No patients found"]))])))
 
 (defn patient-view [initial-values on-submit]
   (let [state (reagent/atom initial-values)
@@ -159,7 +165,7 @@
         state (re-frame/subscribe [::subs/state])]
     (fn []
       (case @state
-        :loading [:section "Loading"]
+        :loading [loading-indicator]
         (if @patient
           [:section [patient-view @patient (fn [form] (re-frame/dispatch [::events/update-patient
                                                                           (assoc (get-patient-form-data form) :id patient-id)]))]]
