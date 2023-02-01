@@ -10,6 +10,12 @@
 (defn create-notification [level message]
   {:id (new js/Date) :level level :message message})
 
+(defn get-error-msg [data default-msg]
+  (let [response (:response data)]
+    (if response
+      (str (vals response))
+      default-msg)))
+
 (re-frame/reg-event-db
  ::initialize-db
  (fn []
@@ -44,8 +50,21 @@
                  :params params
                  :format          (ajax/url-request-format)
                  :response-format (ajax/json-response-format {:keywords? true})
-                 :on-success [::move-to-patients-list]}
+                 :on-success [::on-create-success]
+                 :on-failure [::on-create-failure]}
+
     :db (assoc db :state :loading)}))
+
+(re-frame/reg-event-fx
+ ::on-create-success
+ (fn [_ _]
+   {:fx [[:dispatch [::move-to-patients-list]]
+         [:dispatch [::notify (create-notification :info "successfully created!")]]]}))
+
+(re-frame/reg-event-fx
+ ::on-create-failure
+ (fn [_ [_ data]]
+   {:fx [[:dispatch [::notify (create-notification :error (get-error-msg data "failed to create patient"))]]]}))
 
 (re-frame/reg-event-fx
  ::update-patient
@@ -66,8 +85,8 @@
 
 (re-frame/reg-event-fx
  ::on-update-failure
- (fn [_ _]
-   {:fx [[:dispatch [::notify (create-notification :error "there was an error updating")]]]}))
+ (fn [_ [_ data]]
+   {:fx [[:dispatch [::notify (create-notification :error (get-error-msg data "failed to update patient"))]]]}))
 
 (re-frame/reg-event-fx
  ::delete-patient
@@ -102,7 +121,6 @@
                  :on-failure      [::fetch-patient-failure]}
     :db  (assoc db :state :loading)}))
 
-;; success fx
 (re-frame/reg-event-fx
  ::move-to-patients-list
  (fn []
