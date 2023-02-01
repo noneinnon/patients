@@ -9,12 +9,14 @@
   "scripts": {
     "tailwind": "npx tailwindcss -i input.css -o resources/public/assets/css/output.css",
     "tailwind:watch": "npx tailwindcss -i input.css -o resources/public/assets/css/output.css --watch",
+    "env-cmd": "env-cmd",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "env-cmd": "^10.1.0",
     "shadow-cljs": "^2.20.17",
     "tailwindcss": "^3.2.4"
   },

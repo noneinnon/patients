@@ -4,8 +4,24 @@ services:
   db:
     image: postgres 
     restart: always
+    volumes:
+      - /tmp/postgresdata:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: postgres
-    ports: 
-      - 5432:5432
+  app:
+    image: patients
+    build:
+      context: .
+    entrypoint: bin/entrypoint.sh
+    restart: always
+    environment:
+      DB_NAME: $DB_NAME
+      DB_USER: $DB_USER
+      DB_PASSWORD: $DB_PASSWORD
+      DB_HOST: $DB_HOST
+      DB_PORT: $DB_PORT
+    ports:
+      - 80:3001
+    links:
+      - "db:database"
