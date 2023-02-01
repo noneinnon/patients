@@ -20,11 +20,10 @@
 ;--------------------------------------------------
 ; fixuture hooks
 
-
 (def patients-fixture [{:first_name "john" :last_name "lennon" :age 40 :sex "m" :insurance_number "1234567890123" :address "Liverpool, Penny Lane, 8" :dob (helpers/string-to-date "1940-10-09")} {:first_name "paul" :last_name "mccartney" :age 40 :sex "m" :insurance_number "1234567890123" :address "Liverpool, Penny Lane, 8" :dob (helpers/string-to-date "1940-10-09")} {:first_name "george" :last_name "harrison" :age 40 :sex "m" :insurance_number "1234567890123" :address "Liverpool, Penny Lane, 8" :dob (helpers/string-to-date "1940-10-09")}])
 
 (defn setup []
-  (j/db-do-commands db/pg-db [db/create-table])
+  (db/apply-migrations)
   (j/insert-multi! db/pg-db :patients patients-fixture))
 
 (defn clean-up []

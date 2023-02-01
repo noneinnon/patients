@@ -1,0 +1,22 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Deploy Staging
+    runs-on: ubuntu-latest
+    env:
+        PROJECT_PATH: ${{ secrets.PROJECT_PATH }}
+    steps:
+    - name: Pull from github and build
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.KEY }}
+        port: ${{ secrets.PORT }}
+        script: cd ${{ secrets.PROJECT_PATH }} && bash bin/deploy.sh
+

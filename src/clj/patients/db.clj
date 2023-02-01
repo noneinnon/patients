@@ -4,6 +4,8 @@
             [honey.sql.pg-ops :as pg-ops]
             [honey.sql.helpers :as h]
             ;; https://clojure-doc.org/articles/ecosystem/java_jdbc/home/
+            [ragtime.jdbc :as ragtime-jdbc]
+            [ragtime.repl :as ragtime-repl]
             [clojure.java.jdbc :as j]))
 
 ;; config
@@ -14,21 +16,23 @@
             :user (env :DB_USER)
             :password (env :DB_PASSWORD)})
 
-(def create-table "create table if not exists patients (
-                                id serial primary key, 
-                                first_name varchar(255) not null,
-                                last_name varchar(255) not null,
-                                age int not null,
-                                sex varchar(1) not null,
-                                dob date not null,
-                                insurance_number varchar(70) not null,
-                                address varchar(500) not null,
-                                createdAt timestamp not null default now(),
-                                updatedAt timestamp not null default now());")
-;
-; (j/db-do-commands pg-db [(format "create database if not exists %s;" (env :DB_NAME))])
-;
-; (j/db-do-commands pg-db [create-table])
+;; migrations config
+(def ragtime-config {:datastore (ragtime-jdbc/sql-database pg-db)
+                     :migrations (ragtime-jdbc/load-resources "migrations")})
+
+(defn apply-migrations
+  ([]
+   (apply-migrations nil))
+  ([_]
+   (prn "applying migrations..")
+   (ragtime-repl/migrate ragtime-config)
+   (prn "migrations applied")))
+
+(defn rollback-migrations
+  ([]
+   (rollback-migrations nil))
+  ([_]
+   (ragtime-repl/rollback ragtime-config)))
 
 ;; CRUD
 (defn query [q]
@@ -78,6 +82,9 @@
   (j/delete! pg-db :patients ["id = ?" id]))
 
 (comment
+  (j/db-do-commands pg-db ["drop table patients;"])
+  (ragtime-repl/migrate ragtime-config)
+  (ragtime-repl/rollback ragtime-config)
   (first (get-patients {:sort-param :first_name :order :asc :offset 0 :limit 1}))
   (query (-> (h/select :first_name)
              (h/from :patients)
